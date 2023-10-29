@@ -36,3 +36,23 @@ hello 프로그램이 언젠가 다른 라이브러리에 대한 의존성이 �
 또, `Cargo`는 패키지를 만들 때 git 버전 관리 시스템을 쓸 수 있도록 .git 메타데이터 디렉터리와 .gitignore 파일을 같이 만들어 준다. 
 만약 이 단계를 뛰어 넘고 싶은 경우 프로젝트 생성 시`$ cargo new <package-name> --vcs none`과 같이 입력하여 사용하면 된다.
 
+프로그램을 빌드하기 위해서는 아래 명령어를 사용한다.
+```shell
+$ cargo run
+Compiling hello v0.1.0 (/Users/xtring/Study/rust-study/hello)
+    Finished dev [unoptimized + debuginfo] target(s) in 4.99s
+     Running `target/debug/hello`
+Hello, world!
+```
+
+그러면 `Cargo`가 러스트 컴파일러인 rustc로 패키지를 컴파일한 뒤, 만들어진 실행 파일을 실행시켜준다.  
+실행 파일은 패키지의 최상위에 있는 `target` 디렉터리에 만들어진다.
+```shell
+$ ls -l ../target/debug
+```
+
+작업을 마친 뒤에 생성된 파일을 정리하는 명령도 `Cargo`를 통해서 할수 있다.
+```shell
+$ cargo clean
+```
+컴파일된 파일이 제거된다.
