@@ -1,0 +1,11 @@
+/Users/xtring/Study/rust-study/actix-gcd/target/debug/deps/actix_codec-a5fc9a6517b18d2f.rmeta: /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/lib.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/bcodec.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_read.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_write.rs
+
+/Users/xtring/Study/rust-study/actix-gcd/target/debug/deps/libactix_codec-a5fc9a6517b18d2f.rlib: /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/lib.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/bcodec.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_read.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_write.rs
+
+/Users/xtring/Study/rust-study/actix-gcd/target/debug/deps/actix_codec-a5fc9a6517b18d2f.d: /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/lib.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/bcodec.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_read.rs /Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_write.rs
+
+/Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/lib.rs:
+/Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/bcodec.rs:
+/Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed.rs:
+/Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_read.rs:
+/Users/xtring/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-codec-0.1.2/src/framed_write.rs:
