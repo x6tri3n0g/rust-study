@@ -410,4 +410,11 @@ fn main() {
     $ cargo run
     error[E0308]: mismatched types
     ```
+    
+
+## 주석
+러스트의 주석은 아래와 같이 사용합니다.
+```rust
+// hello, world!
+```
   
