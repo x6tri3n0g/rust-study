@@ -418,3 +418,172 @@ fn main() {
 // hello, world!
 ```
   
+## 제어 흐름문
+
+### if 표현식
+```rust
+fn main() {
+    let number = 3;
+
+    if number < 5 {
+        println!("condition was true");
+    } else {
+        println!("condition was false");
+    }
+}
+```
+- 조건식은 반드시 `bool` 타입
+  - 조건식이 `bool` 타입이 아니라면 에러가 발생
+```rust
+// 에러 발생
+fn main() {
+  let number = 3;
+  
+  if number {   // if 의 조건식은 bool 타입이어야 합니다.
+    println!("number was three");
+  }
+}
+```
+- 러스트는 Ruby나 JS와 같이 if 문에에서 `bool` 타입 여부를 형변환하여 체크하지 않음
+- if 문에는 항상 명시적으로 `bool` 타입임을 확인해야함
+
+#### else if로 여러 조건 다루기
+- 조건문이 `bool` 타입을 통해 평가되는 것만 빼면 기존 언어들과 동일하게 사용됨
+- `else if` 표현식을 너무 많이 사용하는 경우 코드가 복잡해질 수 있으므로, 표현식이 두 개 이상이면 코드를 리펙터링하는 것이 좋음
+- [6장](https://rust-kr.github.io/doc.rust-kr.org/ch06-02-match.html)에서는 이런 경우 적합한 `match`라는 러스트의 강력한 분기 구조에 대해 설명함
+
+
+#### let 구문에서 if 사용하기
+- `if`는 표현식이기 때문에 변수에 결과를 할당하기 위하여 `let` 구문의 우변에 사용할 수 있음
+```rust
+let condition = true;
+let number = if condition { 5 } else { 6 };
+
+println!("The value of number is: {number}");
+```
+- number 변수에는 if 표현식의 결과가 바인딩됨
+  - 5
+- 그렇기 때문에 number에 바인딩 될 결과값의 타입은 동일해야함
+  - 5, 6은 같은 `i32` 타입
+  - 타입이 다른 경우 컴파일 에러가 발생
+    
+### 반복문을 이용한 반복
+- 러스트는 몇 가지 *반복문(loop)* 을 제공
+  - 루프 본문의 시작부터 끝까지 수행한 뒤 처음부터 수행을 반복
+  - `loop`, `while`, `for` 세가지 반복문이 있음
+
+#### loop로 코드 반복하기
+- `loop` 키워드는 명시적으로 알려주기 전까지, 영원히 코드 블록을 반복 수행하도록 함
+```rust
+fn main() {
+  loop {
+    println!("again!");
+  }
+}
+```
+- 강제로 정지(ctrl + c)하기 전까지 실행됨
+- 루프에서 벗어나는 방법
+  - `break`를 사용하면 `loop`를 탈출
+  - `continue`를 사용하면 실행하던 `loop` 본문 중 `continue`만난 곳에서 다시 처음부터 실행
+
+#### 반복문에서 값 반환하기
+- `loop`의 용례 중 하나는 어떤 스레드가 실행 완료되었는지 검사하는 등 실패할지도 모르는 연산을 재시도할 때입니다.
+  - 여기서 해당 연산(loop 연산)의 결과를 이후 코드에 전달하고 싶다면 `break` 표현식 뒤에 반환하고자 하는 값을 넣으면 됨
+```rust
+fn main() {
+    let mut counter = 0;
+
+    let result = loop {
+        counter += 1;
+
+        if counter == 10 {
+            break counter * 2;
+        }
+    };
+
+    println!("The result is {result}");
+}
+```
+- 이 예제에서 보아야할 키-포인트는 두가지
+  - `loop`가 표현식으로 사용됨
+  - `loop` 문의 탈출이 `break` 표현식으로 이루어짐 그리고 `break` 뒤에 반환값을 넣어줌!
+
+#### 루프 라벨로 여러 반복문 사이에 모호함 없애기
+만일 루프가 안에 루프가 있다면, `break`와 `continue`는 해당 지점의 바로 바깥쪽 루프에 적용됩니다. 루프에 *루프 라벨(loop label)* 을 추가로 명시하면 `break`나 `continue`와 함께 이 키워드들이 바로 바깥쪽 루프 대신 라벨이 적히 특정한 루프로 이동할 수 있도록 할 수 있습니다.  
+**루프 라벨은 반드시 작은 따옴표로 시작해야합니다.** 아래 예제를 살펴봅니다.
+```rust
+fn main() {
+  let mut count = 0;
+  'counting_up: loop {
+    println!("count = {count}");
+    let mut remaining = 10;
+
+    loop {
+      println!("remaining = {remaining}");
+      if remaining == 9 {
+        break;
+      }
+      if count == 2 {
+        break 'counting_up;
+      }
+      remaining -= 1;
+    }
+
+    count += 1;
+  }
+  println!("End count = {count}");
+}
+```
+- 바깥쪽 루프는 `'counting_up`이라는 라벨이 붙어있고, 안쪽 loop의 조건에 해당하면 다시 `'counting_up` 루프로 이동하게 됩니다.
+- 안쪽 루프의 `break`는 안쪽 루프만을 벗어납니다.
+
+#### while을 이용한 조건 반복문
+- `while`은 조건문이 `true`가 아니게 될 때 프로그램은 `break`를 호출하여 반복을 종료
+```rust
+fn main() {
+  let mut number = 3;
+  while number != 0 {
+    println!("{number}!");
+
+    number -= 1;
+  }
+
+  println!("LIFTOFF!!!");
+}
+```
+- `while` 문은 `loop`, `if`, `else` 및 `break`를 사용할 때 필요하게 될 많은 중첩 구조를 제거하고 코드를 더 깔끔하게 만듦
+
+#### for를 이용한 컬렉션에 대한 반복문
+- `while`를 사용하여 배열과 같은 컬렉션의 각 요소에 대한 반복문을 작성할 수 있음
+  - 이 방식은 배열의 마지막 인덱스에 도달할 때까지 반복
+  - 이런 접근 방식은 에러가 발생하기 쉬움
+    - 즉 인덱스의 길이가 부정확하면 패닉을 발생시키는 프로그램이 될 수 있음
+    - 예를 들어 a 배열이 네 개의 쇼로를 갖도록 정의한 부분을 변경했는데 `while index < 4`의 조건문을 고치는 걸 잊어버린다면 코드는 패닉을 일으킨다.
+      - 또한, 컴파일러가 루프의 매 반복 회차마다 인덱스가 범위 안에 있는지에 대한 조건문 검사를 수행하는 코드를 붙이기 때문에 느려진다.
+
+이것에 대한 대안으로 `for` 반복문을 사용하여 컬렉션의 각 아이템에 대하여 임의의 코드를 수행시킬 수 있습니다.
+```rust
+fn main() {
+  let a = [10, 20, 30, 40, 50];
+
+  for element in a {
+    println!("the value is: {element}");
+  }
+}
+```
+- `for` 문을 사용하면 코드의 안전성이 강화되고 배열의 끝을 넘어서거나 끝까지 가지 못해서 몇 개의 아이템을 놓쳐서 발생할 수도 있는 버그의 가능성을 제거합니다.
+  - 배열 내 값의 개수가 변경되더라도 수정해야 할 다른 코드를 기억해둘 필요가 없음
+- 러스트에서 가장 흔하게 사용되는 반복문 구성요소
+  - `while` 보다 많이 사용됨
+- 표준 라이브러리가 제공하는 `Range` 타입을 이용하면 특정 횟수만큼의 반복문을 구현할 수 있음
+  - 어떤 숫자에서 시작하여 다른 숫자 종료 전까지의 모든 숫자를 차례로 생성해줌
+
+추가 예시로 `for` 반복문을 이용한 카운트 다운 구현은 아래 처럼 생겼습니다.
+```rust
+fn main() {
+  for number in (1..4).rev() {
+    println!("{number}!");
+  }
+  println!("LIFTOFF!!!");
+}
+```
