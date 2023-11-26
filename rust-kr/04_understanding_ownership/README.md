@@ -249,4 +249,133 @@ fn calculate_length(s: String) -> (String, usize) {
 - 하지만 이런 식은 일반적인 컨셉이 되기엔 너무 거추장스러움
 - 러스트에는 소유권 이동 없이 값을 사용할 수 있는 *참조자(reference)* 라는 기능을 가지고 있음
 
-sss
+
+## 참조와 대여
+위 예제의 `calculate_length`를 호출한 함수로 `String`을 반환하여, 함수 호출 이후에도 `String`을 사용할 수 있게 했습니다.
+이렇게 하는 대신 `String` 값의 참조자를 만들 수 있습니다.  
+  
+*참조자(reference)* 는 해당 주소에 저장된 데이터에 접근할 수 있도록 해주는 주솟값에 해당하는 포인터와 같은 것입니다.
+데이터는 다른 어떤 변수가 소유하고 있습니다. 포인터와는 달리, 참조자는 살아있는 동안 특정 타입에 대한 유효한 값을 가리킴을 보장해 줍니다.
+
+```rust
+fn main() {
+  let s1 = String::from("hello");
+  
+  let len = calculate_length(&s1);  // &s1 참조값을 매개변수로 할당
+  
+  println!("The length of '{}' is {}.", s1, len);
+}
+
+fn calculate_length(s: &String) -> usize {
+  s.len()
+}
+```
+- 앤퍼센트(`&`) 기호자는 *참조자*를 나타내고, 어떤 값의 소유권을 가져오지 않고 해당 값을 참조할 수 있도록 해줌
+- `&String s`는 `String s1`을 가리킴
+
+> Note: `&`를 이용한 참조의 반대는 *역참조(dereferencing)*라고 합니다. 역참조 기호는 `*`입니다. 15장에서 자세한 내용을 다룹니다.
+
+```rust
+let s1 = String::from("hello");
+let len = calculate_length(&s1);
+```
+- `s1`에 `&`를 붙인 `&s1` 구문은 `s1` 값을 참조하지만 해당 값을 소유하지 않는 참조자를 생성
+- 값을 소유하지 않으므로 이 참조자가 가리킨 값은 참조자가 사용되지 않을 때까지 버려지지 않음
+
+```rust
+fn calculate_length(s: &String) -> usize {
+  s.len()
+}
+```
+- 함수 시그니처에도 `&`를 사용하여 `s`가 참조자 타입임을 나타냄
+- `s`에는 소유권이 없으므로 `s`가 더 이상 사용되지 않을 때도 이 참조자가 가리킨 값이 버려지지 않음
+- 함수가 실제 값 대신 참조자를 매개변수로 쓴다면 애초에 소유권이 없으니까 이 소유권을 돌려주기 위한 값 반환도 필요 없어짐
+- 이처럼 참조자를 만드는 행위를 *대여(borrow)* 라고 함
+  
+빌린 값을 수정하는 경우?
+```rust
+fn main() {
+  let s = String::from("hello");
+  change(&s);   // error[E0596]: cannot borrow `*some_string` as mutable, as it is behind a `&` reference
+}
+
+fn change(s: &String) {
+  s.push_str(", world");
+}
+```
+- **변수가 기본적으로 불변성을 지니듯, 참조자도 참조하는 것을 수정할 수 없음**
+
+### 가변 참조자
+*가변 참조자(mutable reference)* 를 사용하는 식으로 예제를 수정해봅시다.
+```rust
+fn main() {
+  let mut s = String::from("hello");
+  change(&mut s);
+}
+
+fn change(s: &mut String) {
+  s.push_str(", world");
+}
+```
+- `s`를 `mut`로 변경함
+- `change` 함수의 매개변수에도 `s`가 `mut`임을 명시적으로 남김 
+  
+가변 참조자는 한 가지 큰 제약사항이 있습니다. 어떤 값에 대한 가변 참조자가 있다면, 그 값에 대한 참조자는 더 이상 만들 수 없습니다.
+아래 코드는 작동하지 않습니다.
+```rust
+let mut s = String::from("hello");
+
+let r1 = &mut s;
+let r2 = &mut s;
+
+println!("{}, {}", r1, r2); // error[E0499]: cannot borrow `s` as mutable more than once at a time
+```
+- 가변 `s`를 두번 이상 빌려올 수 없기 때문에 발생하는 에러
+  
+이러한 제약은 값의 변경에 대한 제어가 원활하도록 해줍니다.
+이 제약 덕분에 러스트에서는 컴파일 타임에 *데이터 경합(data race)* 을 방지할 수 있습니다.
+데이터 경합이란 다음 세 가지 상황이 겹칠 때 일어나는 특정한 경합 조건(race condition)입니다.
+- 둘 이상의 포인터가 동시에 같은 데이터에 접근
+- 포인터 중 하나 이상이 데이터에 쓰기 작업을 시행
+- 데이터 접근 동기화 메커니즘이 없음
+  
+데이터 경함은 정의되지 않은 동작을 일으키며, 런타임에 추적하려고 할 때 문제 진단 및 수정이 어렵습니다.
+  
+중괄호로 새로운 스코프를 만들어, 가변 참조자를 여러 개 만들면서 *동시에 존재하는 상황* 을 회피하는 방법도 있습니다.
+```rust
+let mut s = String::from("hello");
+
+{
+    let r1 = &mut s;
+}
+
+let r2 = &mut s;
+```
+  
+가변 참조자와 불변 참조자를 혼용할 때도 유사한 규칙이 적용됩니다. 다음 코드는 컴파일 에러가 발생합니다.
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s;    // 문제없음
+let r2 = &s;    // 문제없음
+let r3 = &mut s;    // 문제
+
+println!("{}, {}, and {}", r1, r2, r3); // error[0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+```
+- 어떤 값에 대한 불변 참조자가 있는 동안 같은 값의 가변 참조자를 만드는 것 또한 불가능합니다.
+- 불변 참조자를 사용하는 쪽에서는 사용 중 값이 중간에 변경되리라 예상하지 않음
+- 데이터를 읽기만 하는 기능으로는 다른쪽에서 값을 읽는 기능에 영향을 주지 않으므로, 여러 개의 불변 참조자를 만드는 것은 가능함
+
+```rust
+let mut s = String::from("hello");
+
+let r1 = &s; // 문제없음
+let r2 = &s; // 문제없음
+println!("{} and {}", r1, r2);
+// 이 지점 이후로 변수 r1과 r2는 사용되지 않습니다
+
+let r3 = &mut s; // 문제없음
+println!("{}", r3);
+```
+
+### 대글링 참조
