@@ -379,3 +379,128 @@ println!("{}", r3);
 ```
 
 ### 대글링 참조
+> *댕글링 포인터(dangling pointer; 매달린 포인터)* 란, 어떤 메모리를 가리키는 포인터가 남아있는 상황에서 일부 메모리를 해제해 버림으로써,
+다른 개체가 할당받았을지도 모르는 메모리를 참조하게 된 포인터를 말합니다. 포인터가 있는 언어에서는 자칫 잘못하면 이 댕글링 포인터를 만들기 쉽습니다.
+하지만 러스트에서는 어떤 데이터의 참조자를 만들면, 해당 참조자가 스코프를 벗어나기 전에 데이터가 먼저 스코프를 벗어나는지 확인하여 댕글링 참조가 생성되지 않도록 보장합니다.
+  
+댕글링 참조를 만들어서 러스트가 어떤 식으로 이것을 컴파일 타임에 방지하는지 살펴봅시다:
+
+```rust
+fn main() {
+  let reference_to_nothing = dangle();
+}
+
+fn dangle() -> &String {    // error[E0106]: missing lifetime specifier
+  let s = String::from("hello");
+  &s
+}
+```
+- lifetime 이라는 에러 메시지가 등장(10장에서 다룰 예정)
+- `s`는 `dangle` 함수 내에서 생성됐기 때문에, 함수가 끝날 때 할당 해제됨
+  - 코드에서 `&s`를 반환하는 과정에서 유효하지 않는 `String`을 가리키는 참조자를 반환하는 행위이기 때문에 에러 발생
+- 이 경우 해결방법으로 `String`을 직접 반환
+```rust
+fn no_dangle() -> String {
+  let s = String::from("hello");
+  s
+}
+```
+소유권은 이동되며, 할당 해제되지도 않습니다.
+
+
+## 슬라이스
+- 컬렉션(collection; 데이터 구조의 목록과 같은 형식)을 통째로 참조하는 것이 아닌, 컬렉션의 연속된 일련의 요소를 참조하도록 해줌
+- 참조자의 일종으로서 소유권을 갖지 않음
+
+공백문자로 구분된 단어들의 문자열을 입력받아서 해당 문열의 첫 번째 단어를 반환하는 함수
+```rust
+fn main() {
+    let s: String = String::from("hello world!");
+    
+    let blank_index = first_words(&s);
+    println!("{}", blank_index);
+}
+
+fn first_words(s: &String) -> usize {
+    let bytes = s.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return i;
+        }
+    }
+
+    s.len()
+}
+```
+- `String`을 하나하나 쪼개서 해당 요소가 공백 값인지 확인해야 하므로, `as_bytes` 메서드를 이용해 바이트 배열로 변환
+```rust
+let bytes = s.as_bytes();
+```
+- 그 다음, 바이트 배열에 사용할 반복자(iterator)를 `iter` 메서드로 생성
+```rust
+for (i, &item) in bytes.iter().enumerate() { ...
+```
+  - 반복자(iterator)는 `13장`에서 자세히 살펴볼 예정
+  - `iter` 메서드는 컬렉션의 각 요소를 반환
+    - `enumerate` 메서드는 `iter`의 각 결과값을 튜플로 감싸 반환
+      - 이때 반환하는 튜플은 첫번째 요소가 인덱스, 두 번째 요소가 해당 요소의 참조자로 이루어짐
+      - `i`는 튜플 요소 중 인덱스, `&item`은 바이트에 대응
+        - `&`를 사용하는 이유는 `iter().enumerate()`에서 얻은 요소의 참조자가 필요하기 때문
+```rust
+      if item == b' ' {
+          return i;
+      }
+  }
+
+  s.len()
+```
+- `for` 반복문 내에서는 바이트 **리터럴 문법** 으로 공백문자를 나타내는 바이트를 찾고, 찾으면 해당 위치를 반환
+- 찾지 못한 경우엔 s 문자열의 길이를 리턴
+
+이 함수에는 문제가 있습니다. `usize`를 반환하고 있는데, 이는 `&String` 컨텍스트에서만 의미 있는 숫자일 뿐입니다. 바꿔 말하면, `String`과는 별개의 값이기 때문에 향후에도 유효하다는 보장이 없습니다.
+
+```rust
+// first_word 함수의 결과를 저장했으나, 이후에는 String의 내용물이 변경된 상황
+fn main() {
+  let mut s = String::from("hello world");
+  let word = first_word(&s);  // word는 값 5를 받음
+  s.clear();  // clear()는 String을 비워서 ""으로 만듬
+}
+```
+이 코드는 정상적으로 컴파일되지만, `s.clear()`를 호출한 후에 `word`를 사용하는 코드를 작성하더라도 `word`는 `s`와 분리되어 있느니 결과는 동일하다. 하지만, `word`에 담긴 값 `5`를 본래 목적대로 `s`에서 첫 단어를 추출하는데 사용할 경우 버그를 유발할 수도 있습니다. `s`의 내용물은 변경되었기 때문에...
+
+만약 두 번째 단어를 찾는 함수를 만든다면 시작과 끝 두 인덱스가 필요할 것이고 앞선 예제와 같이 어떤 데이터의 특정 상태에만 의존하는 값들이 늘어남을 의미하게 됩니다.  
+다행히도, 러스트에는 문자열 슬라이스라는 적절한 대안이 존재합니다.
+
+### 문자열 슬라이스
+- `String`의 일부를 가리키는 참조자를 말함
+```rust
+let s = String::from("hello world");
+
+let hello = &s[0..5];
+let world = &s[6..11];
+```
+- `[starting_index..ending_index]`의 슬라이스를 생성한다는 의미
+- 슬라이스는 내부적으로 시작위치, 길이를 데이터 구조에 저장하며, 길이 값은 `ending_index` 값에서 `starting_index`를 빼서 계산
+  
+`..` 범위 표현법은 인덱스 0부터 시작하는 경우, 앞의 값을 생략할 수 있습니다.  
+혹은 `String`의 맨 마지막 바이트까지 포함하는 슬라이스는 뒤의 값을 생략할 수 있습니다.
+```rust
+let s = String::from("hello world");
+
+let hello = &s[..5];
+let world = &s[6..];
+
+let len = s.len();
+let world = &s[6..len];
+```
+  
+앞뒤 인덱스를 모두 생략할 경우, 전체 문자열이 슬라이스로 생성됩니다. 아래 두 `hello`는 동일합니다.
+```rust
+let s = String::from("hello");
+
+let len = s.len();
+let hello = &s[0..len];
+let hello = &s[..];
+```
