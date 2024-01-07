@@ -350,3 +350,61 @@ $ cargo run
 line: 10의 디버깅 값을 보여준다. 이 처럼 `dbg!` 매크로는 현재 내가 작성한 코드가 어떤 일을 하고 있는지 알아볼 때 매우 유용하게 사용될 수 있다.
   
 러스트에서는 이처럼 `Debug` 트레이트 말고도 `derive` 속성으로 직접 만든 타입에 유용한 동작을 추가할 수 있는 트레이트를 여럿 제공한다. 다양한 트레이트는 [원문의 부록 C](https://doc.rust-kr.org/appendix-03-derivable-traits.html)에서 확인이 가능하다. 이런 트레이트의 동작을 커스터마이징해서 구현하는 방법은 10장에서 배울 예정이다. 
+
+## 메서드 문법
+*메서드(method)* 는 함수와 유사하다. `fn` 키워드와 함수명으로 선언하고, 매개변수와 반환 값을 가지며, 다른 어딘가로부터 호출될 때 실행됩니다. 하지만 메서드는 함수와 달리 구조체 컨텍스트에 정의되고(열거형, 트레이트 객체 안에 정의되기도 함; 6장, 17장), 첫 번재 매개변수가 항상 `self`라는 차이점이 있다. `self` 매개변수는 메서드를 호출하고 있는 구조체 인스턴스를 나타낸다.
+
+### 메서드 정의하기
+기존의 `Rectangle` 매개변수를 갖던 `area`를 수정해본다.
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!(
+        "The area of the ractangle is {} square pixels",
+        rect1.area()
+    );
+
+    println!("rect1 is {:#?}", rect1);
+}
+```
+`Rectangle`의 컨텍스트에 함수를 정의하기 위해서, `Rectangle`에 대한 `impl`(implementation, 구현) 블록을 만드는 것으로 시작한다.  
+`area` 메서드를 호출하는데는 *메서드 문법(method syntax)* 을 사용할 수 있다.  
+`area` 시그니처에서는 `rectangle: &Rectanle` 대신 `&self`를 사용했다. `&self`는 실제로 `&self: &Self`를 줄인 것이다.  
+만약 메서드에서 작업 중 호출한 인스턴스를 변경하고 싶은 경우 `&mut self`를 사용한다. `self`라고만 작성하여 인스턴스의 소유권을 가져오도록 만드는 일은 거의 없다. `self`만 사용하는 경우는 보통 하당 메서드가 `self`를 다른 무언가로 변환하고 그 이후에는 원본 인스턴스의 사용을 막고자 할 때 사용된다.  
+함수 대신 메서드를 사용하는 주된 이유는 메서드 구문을 제공하고 모든 메서드 시그니처 내에서 `self` 타입을 반복할 필요가 없다는 것 외에도 코드를 더 조직적으로 만들기 위해서다. 향후 우리가 제공한 라이브러리를 사용할 사람들이 `Rectangle`의 기능과 관련된 코드를 라이브러리 곳곳에서 찾아내야 하는 것보다는, 하나의 `impl` 블록 내에 이 타입의 인스턴스로 할 수 있는 모든 것들을 모아두는 방식이다.  
+  
+구조체의 필드 이름과 동일한 이름의 메서드를 만들 수도 있다. 예를 들면 `width`라는 중복된 이름의 메서드를 `Rectangle` 상에 정의할 수 있다.
+```rust
+impl Rectangle {
+    fn width(&self) -> bool {
+        self.width > 0
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    if rect1.width() {
+        println!("The rectangle has a nonzero width; it is {}", rect1.width);
+    }
+}
+```
