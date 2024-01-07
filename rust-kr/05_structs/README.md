@@ -251,3 +251,102 @@ fn area(rectangle: &Rectangle) -> u32 {
 ```
 `Rectangle`이라는 구조체를 정의하고 `width`, `height` 데이터를 정의한다. 그리고 main 함수 안에서 `rect1`에 인스턴스를 정의한다.  
 main 함수 내에서 `area`를 호출 후에도 `Rectangle` 구조체를 사용할 수 있도록 참조자 타입으로 소유권을 빌려오기만 한다.(`&rect1`)  
+참조자를 통해 `area`에 매개변수로 사용했기 때문에 필드 값을 이동시키지 않는다. 이제 `area` 함수의 시그니처는 이제 의미하는 바를 명확하게 알려준다. 이렇게 코드를 좀더 명료하게 만들었다.  
+
+### 트레이트 파생으로 유용한 기능 추가하기
+```rust
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!("rect1 is {}", rect1);
+}
+```
+이 코드는 동작하지 않는다. 
+```shell
+error[E0277]: `Rectangle` doesn't implement `std::fmt::Display`
+```
+`println!` 매크로에는 여러 출력 형식을 사용할 수 있다. 기본형인 `{}`로 지정할 땐 `Display`라는 최종 사용자를 위한 출력 형식을 사용한다. 여태 사용했던 기본 타입들은 `Display`가 기본적으로 구현되어 있었다. 예를 들어 `1`과 같은 기본 타입들은 사용자에게 보여줄 수 있는 형식이 딱 한가지 뿐이기 때문이다. 하지만 구조체는 그렇지 않다.(다양한 구조체의 형태가 존재할 수 있기 때문에) 따라서 러스트는 구조체의 `Display` 구현체를 제공하지 않는다.  
+에러를 더 읽다 보면 다음과 같은 도움말을 찾을 수 있다.
+```shell
+  = help: the trait `std::fmt::Display` is not implemented for `Rectangle`
+  = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead
+```
+`{}` 대신 `{:?}`를 사용해 보라고 한다. `{:?}`는 `Debug`라는 출력 형식을 사용하고 싶다고 전달하는 것과 같다. `Debug`라는 트레이트는 최종 사용자가 아닌, 개발자에게 유용한 방식으로 출력하여 디버깅하는 동안 값을 볼 수 있게 해주는 트레이트이다.
+```rust
+println!("rect1 is {:?}", rect1);
+```
+위와 같이 수정하여 실행해보니 여전히 에러가 발행한다. 
+```shell
+error[E0277]: `Rectangle` doesn't implement `Debug`
+...
+= help: the trait `Debug` is not implemented for `Rectangle`
+= note: add `#[derive(Debug)]` to `Rectangle` or manually `impl Debug for Rectangle`
+```
+러스트는 디버깅 정보를 출력하는 기능을 자체적으로 가지고 있으나 우리가 만든 구조체에 해당 기능을 적용하려면 명시적인 동의가 필요하다.  
+구조체 정의 바로 이전에 `#[derive(Debug)]` 외부 속성(outer attribute)을 작성해준다.
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!("rect1 is {:?}", rect1);
+}
+```
+컴파일 시 안내와 같이 `{:#?}` 역시 사용할 수 있는데 이는 좀더 읽기 편한 방식으로 출력해준다.
+```shell
+rect1 is Rectangle {
+    width: 30,
+    height: 50,
+}
+```
+`Debug` 포맷을 사용하여 값을 출력하는 그 밖의 방법은 `dbg!` 매크로를 사용하는 것이 있다. 이는 표현식의 소유권을 가져와서 코드에서 `dbg!` 매크로를 호출한 파일 및 라인 번호를 결괏값과 함께 출력하고 다시 소유권을 반환한다.  
+> Note: dbg! 매크로의 호출은 표준 에러 콘솔 스트림(stderr)에 출력을 하는데, 이는 표준 출력 콘솔 스트림(stdout)에 출력하는 println!과는 상반됩니다. stderr와 stdout에 대한 정보는 12장의 ‘표준 출력 대신 표준 에러로 에러 메시지 작성하기’절에서 더 이야기하겠습니다.
+
+아래는 `rect1`의 전체 구조체 값뿐만 아니라 `width` 필드에 대입되는 값에 대한 정보를 얻기 위한 방법이다.
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let scale = 2;
+    let rect1 = Rectangle {
+        width: dbg!(30 * scale),
+        height: 50,
+    };
+
+    dbg!(&rect1);
+}
+```
+```shell
+$ cargo run
+   Compiling rectangles v0.1.0 (file:///projects/rectangles)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.61s
+     Running `target/debug/rectangles`
+[src/main.rs:10] 30 * scale = 60
+[src/main.rs:14] &rect1 = Rectangle {
+    width: 60,
+    height: 50,
+}
+```
+line: 10의 디버깅 값을 보여준다. 이 처럼 `dbg!` 매크로는 현재 내가 작성한 코드가 어떤 일을 하고 있는지 알아볼 때 매우 유용하게 사용될 수 있다.
+  
+러스트에서는 이처럼 `Debug` 트레이트 말고도 `derive` 속성으로 직접 만든 타입에 유용한 동작을 추가할 수 있는 트레이트를 여럿 제공한다. 다양한 트레이트는 [원문의 부록 C](https://doc.rust-kr.org/appendix-03-derivable-traits.html)에서 확인이 가능하다. 이런 트레이트의 동작을 커스터마이징해서 구현하는 방법은 10장에서 배울 예정이다. 
