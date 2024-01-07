@@ -176,4 +176,78 @@ help: consider introducing a named lifetime parameter
 For more information about this error, try `rustc --explain E0106`.
 error: could not compile `structs` due to 2 previous errors
 ```
-위 에러를 해결하여 구조체에 참조자를 저장하는 방법은 10장에서 알아봅니다. 지금 당장은 `&str` 대신 `String`을 사용하는 것으로 넘어가 봅니다.
+위 에러를 해결하여 구조체에 참조자를 저장하는 방법은 10장에서 알아봅니다. 지금 당장은 `&str` 대신 `String`을 사용하는 것으로 넘어가 봅니다. 
+
+## 구조체를 사용한 예제 프로그램
+```rust
+fn main() {
+    let width1 = 30;
+    let height1 = 30;
+
+    println!(
+        "The area of the ractangle is {} square pixels",
+        area(width1, height1)
+    );
+}
+
+fn area(width: u32, height: u32) -> u32 {
+    width * height
+}
+```
+```shell
+Compiling ractangles v0.1.0 (/Study/rust-study/rust-kr/05_structs/ractangles)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.48s
+     Running `target/debug/ractangles`
+The area of the ractangle is 900 square pixels
+```
+위 코드는 각 치수 값으로 `area` 함수를 호출하여 사각형의 면적을 성공적으로 계산한다. 몇 가지 작업을 더하여 코드를 더 명료적하고 읽기 쉽게 만들 수 있다.  
+`area` 함수의 시그니처를 보면 개선해야 할 점이 보인다.
+```rust
+fn area(width: u32, height: u32) -> u32 {
+```
+`area` 함수는 하나의 사각형의 면적을 계산한다. 두 개의 매개변수를 받고 있지만 두 값이 서로 연관되어 있다는 것을 명확하게 표현하는 부분은 없다. 두 값을 하나로 묶어버리면 코드의 가독성도 높아지고 관리하기도 쉬워진다. 이를 튜플로 해결해보자.
+
+### 튜플로 리팩터링하기
+```rust
+fn main() {
+    let rect1 = (30, 30);
+
+    println!(
+        "The area of the ractangle is {} square pixels",
+        area(rect1)
+    );
+}
+
+fn area(dimensions: (u32, u32)) -> u32 {
+    dimensions.0 * dimensions.1
+}
+```
+튜플의 특정값을 접근하는 방법은 `{튜플명}.{인덱스}`와 같은 방법을 사용한다. 튜플을 사용함으로서 더 짜임새 있는 코드가 됐고, 인수도 단 하나만 넘기면 된다는 점에서 리팩토링을 해보았다. 하지만 튜플의 특성 때문에 값을 인덱스로 접근해야해서 계산식이 불명확졌다.  
+다행히 넓이를 계산할 때는 각 요소의 너비, 높이 구분을 하지 않아도 된다. 하지만 사격형을 그리는 프로그램이라면 말이 두 요소에 대한 구분은 꼭 필요하다. 이를 해결하기 위해 다음에는 구조체를 통해 리팩터링 해보자.
+
+### 구조체로 리팩터링하여 코드에 더 많은 의미를 담기
+사각형에 대한 구조체를 정의하고 이를 사용하여 넓이를 구해보자.
+```rust
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!(
+        "The area of the ractangle is {} square pixels",
+        area(&rect1)
+    );
+}
+
+fn area(rectangle: &Rectangle) -> u32 {
+    rectangle.width * rectangle.height
+}
+```
+`Rectangle`이라는 구조체를 정의하고 `width`, `height` 데이터를 정의한다. 그리고 main 함수 안에서 `rect1`에 인스턴스를 정의한다.  
+main 함수 내에서 `area`를 호출 후에도 `Rectangle` 구조체를 사용할 수 있도록 참조자 타입으로 소유권을 빌려오기만 한다.(`&rect1`)  
