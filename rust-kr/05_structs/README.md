@@ -408,3 +408,94 @@ fn main() {
     }
 }
 ```
+- `rect1.width()`는 `width` 필드가 0보다 크면 true를 반환하고 0이면 false를 반환한다.
+- 필드와 동일한 이름으로 메서드를 만드는 경우는 해당 필드의 값을 얻어오는 것 경우에 많이 사용됩니다. 이러한 메서드르 *게터(getter)* 라고 부르는데, 러스트는 다른 언어들처럼 구조체 필드에 대한 게터를 자동으로 만들지 않는다.
+  - 필드를 비공개(private)로 하고 메서드는 공개(public)로 만들 수 있기 때문에 게터는 어떤 타입의 공개 API로써 어떤 필드에 대해 읽기 전용 접근만 허용하고자 하는 경우 유용하다.
+    - 자세한 내용은 7장에서 다룬다.
+
+#### `->` 연산자는 없나요?
+C나 C++ 언어에서는 메서드 호출할 때 두가지 종류가 있다. 어떤 객체의 메서드를 직접 호출할 땐 `.`를 사용하고, 어떤 객체의 포인터를 이용해 메서드를 호출하는 중이라서 역참조가 필요할 땐 `->`를 사용한다. 예를 들어 `object`라는 포인터가 있다면, `object->something()`는 `(*object).something()`로 나타낼 수 있다.  
+`->` 연산자와 동일한 기능을 하는 연산자는 러스트에 없다. 러스트에는 *자동 참조 및 역참조(automatic referencing and dereferencing)* 라는 기능이 있고, 메서드 호출에 이 기능이 포함되어 있기 때문이다.  
+만약 `object.something()` 코드로 메서드를 호출하면, 러스트에서 자동으로 해당 메서드의 시그니처에 맞도록 `&`, `&mut`, `*`를 추가한다. 다음 두 표현은 같은 표현입니다.  
+
+```rust
+p1.distance(&p2);
+(&p1).distance(&p2);
+```
+  
+### 더 많은 매개변수를 가진 메서드
+`Rectangle` 구조체의 두 번째 메서드를 구현하여 메서드 사용법을 연습해본다.  
+`can_hold` 메소드는 `self` 사각형(첫 번째 `Retangle`) 면적 내에 두 번째 사각형 `Rectangle` 인스턴스가 완전히 들어갈 수 있다면 `true`를 반환하고, 못 들어가면 `false`를 반환한다. 
+```rust
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    let rect2= Rectangle {
+        width: 10,
+        height: 40,
+    };
+
+    let rect3 = Rectangle {
+        width: 60,
+        height: 45,
+    };
+
+    println!("Can rect1 hold rect2? {}", rect1.can_hold(&rect2));
+    println!("Can rect1 hold rect3? {}", rect1.can_hold(&rect3));
+}
+```
+```shell
+Can rect1 hold rect2? true
+Can rect1 hold rect3? false
+```
+
+### 연관함수
+`impl` 블록 내에 구현된 모든 함수를 *연관 함수(associated function)* 라고 부르는데, 이는 `impl` 뒤에 나오는 타입과 모두 연관된 함수이기 때문이다. 동작하는데 해당 타입의 인스턴스가 필요하지 않다면 `self`를 첫 매개변수로 갖지 않는 (따라서 메서드가 아닌) 연관 함수를 정의할 수도 있다. 우리는 이미 `String` 타입에 정의되어 있는 `String:from` 함수처럼 이런 종류의 함수를 사용해봤다.  
+메서드가 아닌 연관 함수는 구조체의 새 인스턴스를 반환하는 생성자로 자주 활용된다. 이 함수들은 보통 `new`라고 명명되는데, `new`는 이 언어에서 특별한 이름 혹은 키워드가 아니다. 예를 들어 아래와 같이 정사각형을 만드는 기능을 제공해볼 수 있다.
+```rust
+impl Rectangle {
+  fn square(size: u32) -> Self {
+    Self {
+      width: size,
+      height: size,
+    }
+  }
+}
+```
+
+연관 함수를 호출할 땐 구조체 명에 `::` 구문을 붙여서 호출한다. 7장에서 알아볼 모듈에 의해 생성되는 네임스페이스에도 사용된다.
+```rust
+let sq = Rectangle::square(3);
+```
+
+### 여러 개의 impl 블록
+각 구조체는 여러 개의 `impl` 블록을 가질 수 있다. 
+```rust
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+}
+
+impl Rectangle {
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+```
+  
+위 코드에서는 `impl` 블록을 여러 개로 나눠야 할 이유가 전혀 없지만, `impl` 블록을 반드시 하나만 작성해야 할 필요는 없음을 보여주기 위한 예시로 작성했다. 여러 `impl` 블록을 유용하게 사용하는 경우는 제네릭 타입 및 트레이트 내용을 다루는 10장에서 확인할 수 있다.
