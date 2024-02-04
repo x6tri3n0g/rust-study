@@ -211,3 +211,96 @@ error: could not compile `enums` due to previous error
 Null이 아닌 값을 갖는다는 가정을 놓치는 경우에 대한 위험 요소가 제거되며느 코드에 더 확신을 갖을 수 있다. Null일 수 있는 값을 사용하기 위해서는 명시적으로 값의 타입을 `Option<T>`로 만들어 줘야 한다. 그 다음엔 값을 사용할 때 명시적으로 Null인 경우를 처리해야 한다. 그러므로써 값의 타입이 `Option<T>`가 아닌 곳은 값이 Null이 아니라고 안전하게 *가정할 수 있다.*  
   
 `Option<T>` 값을 사용하기 위해서는 각 배리언트를 처리할 코드가 필요할 것이다. `Some<T>` 값일 때만 실행돼서 내부의 `T`값을 사용하는 코드도 필요하고 `None` 값일 때만 실행될, `T` 값을 쓸 수 없는 코드도 필요하다.
+
+### match 제어 흐름 구조
+러스트는 `match`라고 불리는 매우 강력한 제어 프름 연산자를 가지고 있다. `match`는 일련의 패턴에 대해 어떤 값을 비교한 뒤 어떤 패턴에 매칭되어있는지를 바탕으로 코드를 수행하도록 해준다. 패턴은 리터럴 값, 변수며으 와일드카드 등 다양한 것으로 구성될 수 있으며, 전체 종류 및 각각의 역할은 18장에 학습한다. `match`는 '패턴의 표현성'으로부터오며 컴파일러는 모든 가능한 경우가 처리되는지 검사한다.  
+  
+```rust
+// 열거형과 열거형의 배리언트를 패턴으로 사용하는 match 표현식
+enum Coin {
+  Penny,
+  Nickel,
+  Dimem,
+  Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+  match coin {
+    Coin::Penny => 1,
+    Coin::Nickel => 5,
+    Coin::Dime => 10,
+    Coin::Quarter => 25,
+  }
+}
+```
+- `match` 키워드 위에 표현식을 써줌
+- `if`에서 사용하는 조건식과 매우 유사해보이지만 큰 차이점이 있음
+  - `if`를 사용하는 경우 조건문에서 부울린 값을 반환해야 하지만, `match`을 통해서는 어떤 타입이든 가능함
+- `match` 갈래(arm)
+  - 하나의 갈래는 패턴과 코드 두 부분으로 이루어져 있음
+    - 첫 번째 갈래에는 값 `Coin::Penny`
+    - 그 뒤에 패턴과 실행되는 코드를 구분해 주는 `=>` 연산자가 있음
+    - 위의 경우 코드는 그냥 값 `1`
+  - 각 갈래는 그 갈래와 쉼표(,)로 구분
+  
+각 갈래와 연관된 코드는 표현식이고, 이 매칭 갈래에서의 표현식의 결과로써 생기는 값은 전체 `match` 표현식에 대해 반환되는 값이다.  
+각 갈래가 그냥 값을 반환하는 예제처럼 매치 갈래의 코드가 짧다면, 중괄호는 보통 사용하지 않는다. 만일 match 갈래 내에서 여러 줄의 코드를 실행시키고 싶다면 중괄호를 사용하고, 갈래 뒤에 붙이는 쉼표는 옵션이 된다.  
+
+```rust
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => {
+            println!("Lucky penny!");
+            1
+        }
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
+```  
+  
+#### 값을 바인딩하는 패턴
+match arm(갈래)의 또 다른 유용한 기능은 패턴과 매칭된 값들의 일부분을 바인딩할 수 있다는 점이다. 이것이 열거형의 배리언트로부터 어떤 값들을 추출할 수 있는 방법이다.  
+  
+한 가지 예로, 열거형 배리언트 중 하나가 내부에 값을 들고 있도록 바꿔보자. 1999년부터 2008년까지, 미국은 각 50개 주마다 한쪽 면의 디자인이 다른 쿼터 동전을 주조했다. 다른 동전들은 주의 디자인을 갖지 않고, 오직 쿼터 동전들만 이렇게 만들었다. 
+
+```rust
+// Quarter 배리언트가 UsState 값도 담고 있는 Coin 열거형
+#[derive(Debug)]
+enum UsState {
+  Alabama,
+  Aleska,
+  // ...
+}
+
+enum Coin {
+  Penny,
+  Nickel,
+  Dime,
+  Quarter(UsState),
+}
+```
+  
+이 코드를 위한 매치 표현식 내에서는 배리언트 `Coin::Quarter`의 값과 매칭되는 패턴에 `state`라는 이름의 변수를 추가한다. `Coin::Quarter`이 매치될 때, `state` 변수는 그 쿼터 동전의 주에 대한 값에 바인딩될 것이다.
+
+```rust
+fn value_in_cents(coin: Coin) -> u8 {
+  match coin {
+    Coin::Penny => 1,
+    Coin::Nickel => 5,
+    Coin::Dime => 10,
+    Coin::Quarter(state) => {
+      println!("State quarter from {:?}!", state);
+      25
+    }
+  }
+}
+
+...
+value_in_cents(Coin::Quarter(UsState::Alaska)); // coin은 Alaska Quarter가 된다
+```
+
+#### Option<T>를 이용하는 매칭
+
+[WIP](https://doc.rust-kr.org/ch06-02-match.html#optiont%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%98%EB%8A%94-%EB%A7%A4%EC%B9%AD)
